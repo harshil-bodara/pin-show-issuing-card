@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="allow-same-origin" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/normalize.css" />
+    <link rel="stylesheet" href="css/global.css" />
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+      var stripe = Stripe(
+        "pk_live_51MD3SVF4EPsWIYn1gLo3Dlf8MQz1tsp7YP2XOKiWFMojrOMKOQ4BaI2DcYC8h5MinPWrhzySqtZ2BGsvZa0jnUMB009HAPKdfT"
+      );
+      async function displayPin() {
+        const ephemeralKeyNonce = await stripe.createEphemeralKeyNonce({
+          issuingCard: "ic_1MPOzYF4EPsWIYn1VDVPIFPF",
+        });
+
+        const ephemeralKey = await fetch(
+          "http://localhost:5004/api/stripe/card/pin",
+          {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                Authorization: " Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NDE5YjZjNjcwMzJlNjU5NmI5NzkxOWMiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsImlhdCI6MTY3OTQwNzE4MywiZXhwIjoxNjgwMDExOTgzfQ.9J9U2pBb6jrXjLz7hDv6HqtjpuF794RXwCE9Dxe9n9w",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ card_id : "ic_1MPOzYF4EPsWIYn1VDVPIFPF", nonce: ephemeralKeyNonce?.nonce }),
+          }
+        ).then((response) => response.json());
+
+        const number = await stripe
+          .elements()
+          .create("issuingCardPinDisplay", {
+            issuingCard: "ic_1MPOzYF4EPsWIYn1VDVPIFPF",
+            nonce: ephemeralKeyNonce?.nonce,
+            ephemeralKeySecret: ephemeralKey?.ephemeralKey?.secret,
+            style: {
+              base: {
+                color: "#fff",
+                fontSize: "16px",
+              },
+            },
+          });
+
+        console.log("number", number);
+
+        number.mount('#pin-number');
+      }
+    </script>
+  </head>
+  <body>
+    <div id="card-number" style="color: red"></div>
+    <button onclick="displayPin()">card pin display</button>
+  </body>
+</html>
